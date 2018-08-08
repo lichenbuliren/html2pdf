@@ -1,0 +1,45 @@
+#!/usr/bin/env node
+
+const program = require('commander');
+const capture = require('../lib');
+const package = require('../package');
+const coloful = require('colorful');
+const util = require('../lib/util');
+
+program
+  .version(package.version)
+  .usage('[optioons]')
+  .option('-u, --url <url>', 'link url')
+  .option('-t, --type [type]', 'export type', /^(pdf|image)$/, 'pdf')
+  .option('-c, --cookie [cookie]', 'page cookie，multiple split with "|"')
+  .option('-e', '--expires [expires]', 'cookie expires time', 1 / 24)
+  .option('-p, --path <path>', 'file path to save', './capture.pdf')
+  .parse(process.argv);
+
+if (!program.url) {
+  console.log(coloful.red('url is required'));
+  process.exit(0);
+}
+
+if (program.type === 'pdf' && util.suffix(program.path) !== 'pdf') {
+  console.log(coloful.red('pdf file must be *.pdf file path'));
+  process.exit(0);
+}
+
+if (program.type === 'image' && !/(png|image|jpeg)/.test(util.suffix(program.path))) {
+  console.log(coloful.red('image file must be *.(png|jpeg|jpg)'));
+  process.exit(0);
+}
+
+if (program.expries) {
+  program.expries = parseFloat(program.expries).toFixed(2);
+} else {
+  program.expries = parseFloat(1 / 24).toFixed(2);
+}
+
+capture.init({
+  url: program.url,
+  path: program.path,
+  type: program.type,
+  cookies: util.splitCookies(program.cookie, program.url, parseFloat(program.expries))
+});
